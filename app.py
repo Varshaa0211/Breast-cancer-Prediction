@@ -4,7 +4,6 @@ import pandas as pd
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from scipy import stats
 
 # ----------------------------
 # Title & Description
@@ -61,19 +60,16 @@ st.sidebar.write("Outlier Handling: IQR Method")
 # ----------------------------
 st.header("🔍 Enter Tumor Features")
 
-    def user_input_features():
+def user_input_features():
     input_data = []
-    for feature in data.feature_names:  # Take ALL features
+    for feature in data.feature_names:  # Take ALL 30 features
         value = st.number_input(f"{feature}", min_value=0.0, value=0.0)
         input_data.append(value)
     return np.array(input_data).reshape(1, -1)
+
 input_data = user_input_features()
+
 # ----------------------------
-# User Input
-st.header("🔍 Enter Tumor Features")
-
-input_data = user_input_features()
-
 # Prediction
 # ----------------------------
 if st.button("Predict"):
@@ -82,3 +78,4 @@ if st.button("Predict"):
         st.error("🔴 The tumor is predicted as **Malignant (Cancerous)**")
     else:
         st.success("🟢 The tumor is predicted as **Benign (Non-Cancerous)**")
+
