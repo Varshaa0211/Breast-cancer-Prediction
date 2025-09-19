@@ -68,7 +68,7 @@ def user_input_features():
         value = st.number_input(f"{feature}", min_value=0.0, value=0.0)
         input_data.append(value)
     return np.array(input_data).reshape(1, -1)
-
+input_data = user_input_features()
 # ----------------------------
 # Prediction
 # ----------------------------
