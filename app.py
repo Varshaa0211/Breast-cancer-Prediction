@@ -62,27 +62,19 @@ st.sidebar.write("Outlier Handling: IQR Method")
 st.header("🔍 Enter Tumor Features")
 
 def user_input_features():
+    def user_input_features():
     input_data = []
-    for feature in data.feature_names[:10]:  # Taking first 10 features for simplicity
+    for feature in data.feature_names:  # Take ALL features
         value = st.number_input(f"{feature}", min_value=0.0, value=0.0)
         input_data.append(value)
     return np.array(input_data).reshape(1, -1)
-
-input_data = user_input_features()
 
 # ----------------------------
 # Prediction
 # ----------------------------
 if st.button("Predict"):
-    try:
-        # Adjust input size if using fewer features than the trained model
-        if input_data.shape[1] != X.shape[1]:
-            st.warning("⚠ Please provide values for all features to get an accurate prediction.")
-        else:
-            prediction = model.predict(input_data)
-            if prediction[0] == 1:
-                st.error("🔴 The tumor is predicted as **Malignant (Cancerous)**")
-            else:
-                st.success("🟢 The tumor is predicted as **Benign (Non-Cancerous)**")
-    except Exception as e:
-        st.error(f"Error: {e}")
+    prediction = model.predict(input_data)
+    if prediction[0] == 1:
+        st.error("🔴 The tumor is predicted as **Malignant (Cancerous)**")
+    else:
+        st.success("🟢 The tumor is predicted as **Benign (Non-Cancerous)**")
