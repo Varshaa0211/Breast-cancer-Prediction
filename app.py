@@ -1,65 +1,88 @@
-# app.py
-
 import streamlit as st
-import pickle
 import numpy as np
-import os
+import pandas as pd
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from scipy import stats
 
-# Get current directory (safe for deployment)
-BASE_DIR = os.path.dirname(_file_)
+# ----------------------------
+# Title & Description
+# ----------------------------
+st.set_page_config(page_title="Breast Cancer Prediction", layout="centered")
+st.title("🩺 Breast Cancer Prediction App")
+st.write("""
+This application predicts whether a breast tumor is **Benign (non-cancerous)** 
+or **Malignant (cancerous)** using Machine Learning.
+""")
 
-# Load the model and scaler
-with open(os.path.join(BASE_DIR, "breast_cancer_model.pkl"), "rb") as f:
-    model = pickle.load(f)
+# ----------------------------
+# Load Dataset
+# ----------------------------
+data = load_breast_cancer()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['target'] = data.target
 
-with open(os.path.join(BASE_DIR, "scaler.pkl"), "rb") as f:
-    scaler = pickle.load(f)
+# ----------------------------
+# Outlier Removal (IQR Method)
+# ----------------------------
+def remove_outliers(df):
+    Q1 = df.quantile(0.25)
+    Q3 = df.quantile(0.75)
+    IQR = Q3 - Q1
+    is_outlier = ((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))
+    df_clean = df[~(is_outlier.any(axis=1))]
+    return df_clean
 
+df_clean = remove_outliers(df)
 
-def predict_breast_cancer(input_features):
-    """
-    input_features: list or array of 30 features in same order as training
-    returns: prediction (0 or 1), and probabilities
-    """
-    arr = np.array(input_features).reshape(1, -1)
-    arr_scaled = scaler.transform(arr)
-    pred = model.predict(arr_scaled)[0]
-    prob = model.predict_proba(arr_scaled)[0]
-    return pred, prob
+# ----------------------------
+# Train Model
+# ----------------------------
+X = df_clean.drop('target', axis=1)
+y = df_clean['target']
 
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-def main():
-    st.title("🩺 Breast Cancer Prediction App")
-    st.write("Enter the tumor cell measurements to predict whether it's *Benign* or *Malignant*.")
+model = LogisticRegression(max_iter=10000)
+model.fit(X_train, y_train)
 
-    # Feature names (30 from sklearn breast cancer dataset)
-    feature_names = [
-        "radius_mean", "texture_mean", "perimeter_mean", "area_mean", "smoothness_mean",
-        "compactness_mean", "concavity_mean", "concave_points_mean", "symmetry_mean",
-        "fractal_dimension_mean",
-        "radius_se", "texture_se", "perimeter_se", "area_se", "smoothness_se",
-        "compactness_se", "concavity_se", "concave_points_se", "symmetry_se", "fractal_dimension_se",
-        "radius_worst", "texture_worst", "perimeter_worst", "area_worst", "smoothness_worst",
-        "compactness_worst", "concavity_worst", "concave_points_worst", "symmetry_worst",
-        "fractal_dimension_worst"
-    ]
+accuracy = model.score(X_test, y_test)
 
-    inputs = []
-    for name in feature_names:
-        val = st.number_input(f"{name}", value=0.0, format="%.5f")
-        inputs.append(val)
+st.sidebar.header("📊 Model Info")
+st.sidebar.write(f"Model Accuracy: **{accuracy*100:.2f}%**")
+st.sidebar.write("Algorithm: Logistic Regression")
+st.sidebar.write("Outlier Handling: IQR Method")
 
-    if st.button("Predict"):
-        pred, prob = predict_breast_cancer(inputs)
+# ----------------------------
+# User Input Section
+# ----------------------------
+st.header("🔍 Enter Tumor Features")
 
-        if pred == 1:
-            st.success("✅ Prediction: *Benign*")
+def user_input_features():
+    input_data = []
+    for feature in data.feature_names[:10]:  # Taking first 10 features for simplicity
+        value = st.number_input(f"{feature}", min_value=0.0, value=0.0)
+        input_data.append(value)
+    return np.array(input_data).reshape(1, -1)
+
+input_data = user_input_features()
+
+# ----------------------------
+# Prediction
+# ----------------------------
+if st.button("Predict"):
+    try:
+        # Adjust input size if using fewer features than the trained model
+        if input_data.shape[1] != X.shape[1]:
+            st.warning("⚠ Please provide values for all features to get an accurate prediction.")
         else:
-            st.error("⚠ Prediction: *Malignant*")
-
-        st.write(f"*Probability Benign:* {prob[1]:.4f}")
-        st.write(f"*Probability Malignant:* {prob[0]:.4f}")
-
-
-if _name_ == "_main_":
-    main()
+            prediction = model.predict(input_data)
+            if prediction[0] == 1:
+                st.error("🔴 The tumor is predicted as **Malignant (Cancerous)**")
+            else:
+                st.success("🟢 The tumor is predicted as **Benign (Non-Cancerous)**")
+    except Exception as e:
+        st.error(f"Error: {e}")
