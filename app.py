@@ -61,7 +61,6 @@ st.sidebar.write("Outlier Handling: IQR Method")
 # ----------------------------
 st.header("🔍 Enter Tumor Features")
 
-def user_input_features():
     def user_input_features():
     input_data = []
     for feature in data.feature_names:  # Take ALL features
@@ -70,6 +69,11 @@ def user_input_features():
     return np.array(input_data).reshape(1, -1)
 input_data = user_input_features()
 # ----------------------------
+# User Input
+st.header("🔍 Enter Tumor Features")
+
+input_data = user_input_features()
+
 # Prediction
 # ----------------------------
 if st.button("Predict"):
